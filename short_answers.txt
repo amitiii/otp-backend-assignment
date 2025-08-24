@@ -1,0 +1,5 @@
+Q1 — Exactly-once under concurrent /verify:
+Row-level lock with SELECT … FOR UPDATE in a transaction. The winner updates (is_active=0, used_at=NOW()) atomically. Others block and then see used/inactive -> 410 code_used.
+
+Q2 — Rolling-window without cron/Redis:
+Log each /otp/request in request_logs using DB time. Count WHERE created_at > NOW() - INTERVAL 15 MINUTE. If ≥ limit => 429 with retry_after from the oldest in-window row.

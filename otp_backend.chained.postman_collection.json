@@ -1,0 +1,111 @@
+{
+  "info": {
+    "name": "OTP Backend API (Chained Tests)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Chained requests for OTP assignment with auto-captured otp_id."
+  },
+  "item": [
+    {
+      "name": "1) Request OTP",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.request.headers.add({key:'Idempotency-Key', value: 'key-' + Date.now()});"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const res = pm.response.json();",
+              "pm.test('status 200/201', function(){pm.expect([200,201]).to.include(pm.response.code);});",
+              "pm.environment.set('otp_id', res.otp_id);",
+              "pm.environment.set('ttl', String(res.ttl));",
+              "pm.environment.set('remaining_requests', String(res.remaining_requests));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/otp/request",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"purpose\": \"{{purpose}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "2) Verify OTP (wrong once)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('401 invalid_code', function(){",
+              "  pm.expect(pm.response.code).to.eql(401);",
+              "  pm.expect(pm.response.json().reason).to.eql('invalid_code');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/otp/verify",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"purpose\": \"{{purpose}}\",\n  \"otp_id\": \"{{otp_id}}\",\n  \"code\": \"000000\"\n}"
+        }
+      }
+    },
+    {
+      "name": "3) Verify OTP (correct)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 verified or 410 used', function(){",
+              "  pm.expect([200,410]).to.include(pm.response.code);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{base_url}}/otp/verify",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"purpose\": \"{{purpose}}\",\n  \"otp_id\": \"{{otp_id}}\",\n  \"code\": \"{{correct_code}}\"\n}"
+        }
+      }
+    }
+  ]
+}
