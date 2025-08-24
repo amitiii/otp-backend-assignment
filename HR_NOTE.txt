@@ -4,4 +4,3 @@ HR QUICK START:
 2) Run: docker compose up --build
 3) API: http://localhost:3000
 4) Endpoints: POST /otp/request (Idempotency-Key header), POST /otp/verify
-5) Use README for curl/Postman examples.
